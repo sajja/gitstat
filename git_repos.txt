@@ -1,0 +1,3 @@
+git@git.pagero.local:/pageroonline/services/communication/ftp/protocol-ftp.git
+git@git.pagero.local:/pageroonline/services/communication/sftp/protocol-sftp.git
+git@git.pagero.local:/pageroonline/services/communication/http/protocol-https.git
