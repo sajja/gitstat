@@ -1,6 +1,7 @@
 package main
 
 import (
+    "flag"
 	"bufio"
 	"fmt"
 	"log"
@@ -45,13 +46,18 @@ func printRepo(r []Repo) {
 	}
 }
 
-func updateRepos(r []Repo) {
+func updateRepos(r []Repo, noUpdate bool) {
 	fmt.Printf("\n\n")
 	for _, repo := range r {
-		if repo.status == true { //update
-			fmt.Printf(green()("Updating repository %s\n"), repo.folder)
-			repo, _ := git.PlainOpen("/home/sajith/stats/" + repo.folder)
-			repo.Pull(&git.PullOptions{RemoteName: "origin"})
+		if (repo.status == true)  { //update
+
+			if (noUpdate) {
+				fmt.Printf(yellow()("Skip update of %s\n"),repo.folder)
+			} else {
+				fmt.Printf(green()("Updating repository %s\n"), repo.folder)
+				repo, _ := git.PlainOpen("/home/sajith/stats/" + repo.folder)
+				repo.Pull(&git.PullOptions{RemoteName: "origin"})
+			}
 		} else { //pull
 			fmt.Printf(yellow()("Pulling repository %s\n"), repo.folder)
 			_, err := git.PlainClone("/home/sajith/stats/"+repo.folder, false, &git.CloneOptions{URL: repo.url, Progress: os.Stdout,
@@ -69,7 +75,7 @@ func printStats(r []Repo, user string, from string, to string) {
 	fmt.Printf(green()("\nGenerating statistics for user:%s \t From %s  To %s\n"),user, from, to)
 	for _, repo := range r {
 		fmt.Printf(yellow()(repo.folder + "___________________________________________________________________________\n"))
-		output, err := exec.Command("/home/sajith/scratch/mystats/getstat.sh", repo.folder, "kanishka.desilva@pagero.com", from, to).Output()
+		output, err := exec.Command("/home/sajith/scratch/gitstats/getstat.sh", repo.folder, "kanishka.desilva@pagero.com", from, to).Output()
 		if (err != nil) {
 			log.Fatal(err)
 		}
@@ -86,20 +92,29 @@ func getRepoStatus(stats bool) string {
 }
 
 func main() {
-	args := os.Args
-	if (len(args)) != 4 {
-		fmt.Println(len(args))
-		log.Fatal("Incorrect arguments. usage analyse.go sajiths 2016/05/01  2017/03/21")
-	}
 
-	user := args[1]
-	from:=args[2]
-	to:=args[3]
+    var noUpdate bool
+	var user string
+	var from string
+	var to string
 
+    flag.BoolVar(&noUpdate, "noupdate", true, "a string var")
+    flag.StringVar(&user, "user", "", "a string var")
+    flag.StringVar(&from, "from", "", "a string var")
+    flag.StringVar(&to, "to", "", "a string var")
+	flag.Parse()
+
+    fmt.Println("user:", user)
+	fmt.Println("from:", from)
+	fmt.Println("to:",to)
+	fmt.Println("noUpdate:",noUpdate)
+	
 	file, err := os.Open("git_repos.txt")
+
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	defer file.Close()
 
 	fmt.Printf(green()("Repositories....\n"))
@@ -124,8 +139,11 @@ func main() {
 	}
 
 	printRepo(repoList)
-	updateRepos(repoList)
+	updateRepos(repoList, noUpdate)
 	fmt.Print(green()("\nAll repos are update\n"))
-	printStats(repoList, user, from, to)
+
+	if len(user) > 0 {
+		printStats(repoList, user, from, to)
+	}
 
 }
